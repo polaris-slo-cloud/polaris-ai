@@ -5,9 +5,9 @@ from collections import defaultdict
 from math import sqrt
 import json
 
-from gcd_data_manipulation import data_aggregation
-from gcd_data_manipulation import extract_train_test
-from gcd_data_manipulation import load_data
+from ..gcd_data_manipulation import data_aggregation
+from ..gcd_data_manipulation import extract_train_test
+from ..gcd_data_manipulation import load_data
 from keras.layers import Dense
 from keras.layers import LSTM
 from keras.models import Sequential
@@ -148,8 +148,8 @@ if __name__ == "__main__":
     JOB_ID = args.job_id
 
     input_path = "data/task-usage_job-ID-%i_total.csv" % JOB_ID
-    figures_path = 'figures'
-    results_path = 'results'
+    figures_path = '../figures'
+    results_path = '../results'
 
     columns_to_consider = columns_selection[cols]
 
