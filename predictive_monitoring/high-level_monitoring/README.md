@@ -7,3 +7,4 @@ The folder models contains the pre-trained LSTMs. To test it, you can run the te
 
 The folder `lstm_approach` contains the code to run the LSTM model. To re-train the LSTM, it is possible to run the script `gcd_single-job_multivariate_prediction.py [epochs neurons batch_size] --exp-name [exp]`. To reproduce the exact same model, the code is:`gcd_single-job_multivariate_prediction.py 400 50 72 --exp_name exp_01`.
 
+The folder `transformer_approach` contains all the required components related with the transformer model, as well as a detailed readme file. There, one can find the model used for the resource prediction inside the `model` folder. Also, a simplified python code called `example.py` is provided in order to test and learn how to use the model.
