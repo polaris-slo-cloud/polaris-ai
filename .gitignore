@@ -133,15 +133,15 @@ dmypy.json
 
 
 # General
-.DS_Store
-.AppleDouble
-.LSOverride
+**/.DS_Store
+**/.AppleDouble
+**/.LSOverride
 
 # Icon must end with two \r
-Icon
+**/Icon
 
 # Thumbnails
-._*
+**/._*
 
 # Files that might appear in the root of a volume
 **/.DocumentRevisions-V100
