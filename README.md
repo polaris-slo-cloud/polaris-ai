@@ -1,6 +1,10 @@
 # polaris-ai
 
-This repository contains the tools developed in the framework of the polaris-slo-cloud project that belong to AI technologies.
+This repository contains the tools developed in the framework of the polaris-slo-cloud project that belong to AI technologies.  
+
+The main purpose of this repository is to develop the set of AI-enabled tools to ease and automate the management of deployments in the cloud. These tools aim at allowing a better and more business oriented management of deployments by providing control over high-level SLOs or creating workload profiles based on metadata.  
+The final aim is recommending or automating the resource profiling, as well as, predicting and performing autoscaling actions on the deployment to ensure its optimal use without violating any SLO.  
+
 In this regard, the architecture for the AI technologies of the polaris-slo-cloud project is presented below:
 ![polaris-ai architecture](https://raw.githubusercontent.com/vikcas/figures/main/Polaris-ai_architecture_scheme.png)
 
