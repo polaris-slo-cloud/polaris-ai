@@ -1,4 +1,4 @@
-from transformer_train import init_transformer, prepare_data
+from transformer_train import init_transformer, prepare_data, q25, q75, q95
 from data_loader import LoadGoogleDataset
 from torch.utils.data import DataLoader
 import json
@@ -7,11 +7,11 @@ import torch
 if __name__ == '__main__':
     # Set paths to data
     data_path = "../data/task-usage_job-ID-3418339_total.csv"
-    # Select columns from dataset
-    columns_file = "../columns_selection.json"
-    columns_scheme = "LSTM_efficiency_1"
+    # # Select columns from dataset
+    # columns_file = "../columns_selection.json"
+    # columns_scheme = "LSTM_efficiency_1"
     # Prepare dataset
-    df = prepare_data(data_path, columns_file, columns_scheme)
+    df = prepare_data(data_path)
     # Set up a device
     device = 'cpu'
     # Load the model configuration

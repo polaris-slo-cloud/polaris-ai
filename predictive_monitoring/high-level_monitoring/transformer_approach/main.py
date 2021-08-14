@@ -8,13 +8,13 @@ from transformer_train import *
 import os
 
 
-def asha_training(exp_name, num_samples=500, max_num_epochs=30, gpus_per_trial=1, cpus_per_trial=10):
+def asha_training(exp_name, num_samples=400, max_num_epochs=35, gpus_per_trial=1, cpus_per_trial=10):
     data_path = "../data/task-usage_job-ID-3418339_total.csv"
     columns_file = "../columns_selection.json"
     columns_scheme = "LSTM_efficiency_1"
     cuda_id = 1
 
-    df = prepare_data(data_path, columns_file, columns_scheme)
+    df, scaler = prepare_data(data_path)  # , columns_file, columns_scheme)
 
     os.environ["CUDA_VISIBLE_DEVICES"] = "1,2,3"
     # torch.cuda.set_device("cuda:1")
@@ -30,21 +30,21 @@ def asha_training(exp_name, num_samples=500, max_num_epochs=30, gpus_per_trial=1
 
     config = {
         "random_seed": tune.randint(1, 10000),
-        "lr": tune.choice([0.01]),
+        "lr": tune.choice([0.005, 0.01, 0.02]),
         "lr_step": tune.choice([2]),
         "gamma": tune.choice([0.99]),
         "epochs": tune.choice([30]),
-        "n_heads": tune.randint(2, 16),
-        "dim_val": tune.choice([2, 4, 6, 8, 10, 12, 14, 16, 18]),  # FIXME requires numero parell...
+        "n_heads": tune.randint(8, 12),
+        "dim_val": tune.choice([8, 10, 12]), 
         "dim_att": tune.randint(2, 20),
-        "encoder_layers": tune.randint(1, 10),
-        "decoder_layers": tune.randint(1, 10),
+        "encoder_layers": tune.randint(5, 9),
+        "decoder_layers": tune.randint(1, 2),
         "batch_size": tune.choice([4]),
-        "input_feat_enc": tune.choice([15]),
+        "input_feat_enc": tune.choice([96]),
         "input_feat_dec": tune.choice([1]),
-        "seq_len": tune.choice([64]),
+        "seq_len": tune.choice([24]),
         # [16, 32, 64, 128, 256, 512, 1024, 2048]
-        "prediction_step": tune.choice([1])
+        "prediction_step": tune.choice([3])
     }
 
     scheduler = ASHAScheduler(
@@ -89,20 +89,20 @@ if __name__ == '__main__':
     print(torch.__version__)
 
     # Training, validation and test of the best model for the ASHA scheduler.
-    exp_name = None
-    if len(sys.argv) != 2:
-        print("Provide experiment name")
-        exit(1)
-    else:
-        exp_name = sys.argv[1]
-        asha_training(exp_name)
+    exp_name = "multistep_test_eff"
+    # if len(sys.argv) != 2:
+    #     print("Provide experiment name")
+    #     exit(1)
+    # else:
+    #     exp_name = sys.argv[1]
+    asha_training(exp_name)
 
     # For debugging purposes.
     # data_path = "../data/task-usage_job-ID-3418339_total.csv"
-    # columns_file = "../columns_selection.json"
-    # columns_scheme = "LSTM_efficiency_1"
+    # # columns_file = "../columns_selection.json"
+    # # columns_scheme = "LSTM_efficiency_1"
     # cuda_id = 1
-    # df = prepare_data(data_path, columns_file, columns_scheme)
+    # df, scaler = prepare_data(data_path)  # , columns_file, columns_scheme)
     # #
     # os.environ["CUDA_VISIBLE_DEVICES"] = "1"
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

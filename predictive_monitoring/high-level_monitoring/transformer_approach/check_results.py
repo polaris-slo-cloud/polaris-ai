@@ -3,30 +3,30 @@ import os
 import json
 from csv import DictReader
 import matplotlib.pyplot as plt
-from transformer_approach.transformer_train import init_transformer, transformer_test, prepare_data
+from transformer_train import init_transformer, transformer_test, prepare_data
 import torch
 
 
 if __name__ == '__main__':
 
-    data_path = "../../data/task-usage_job-ID-3418339_total.csv"
-    columns_file = "../../columns_selection.json"
-    columns_scheme = "LSTM_efficiency_1"
+    data_path = "/home/vcpujol/src/polaris-ai/predictive_monitoring/high-level_monitoring/data/task-usage_job-ID-3418339_total.csv"
+    # columns_file = "../../columns_selection.json"
+    # columns_scheme = "LSTM_efficiency_1"
     cuda_id = 1
 
 
     # extra_ds = "task-usage_job-ID-5546501684_total.csv"
     # data_path = "/data/cloud_data/Google-clusterdata-2011-2/processed_data/high-level_monitoring/" + extra_ds
-    path_to_save = "/data/results/vcpujol/transformers/single_deployment/google_traces/model_params_best/"
+    path_to_save = "/data/results/vcpujol/transformers/single_deployment/google_traces/multistep_best_eff_computed/"
 
-    df = prepare_data(data_path, columns_file, columns_scheme)
+    df, scaler = prepare_data(data_path)  #, columns_file, columns_scheme)
 
     # os.environ["CUDA_VISIBLE_DEVICES"] = "1,2,3"
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     device ='cpu'
 
     results_path = "/data/results/vcpujol/transformers/single_deployment/google_traces/"
-    experiment = "model_params_4/"
+    experiment = "multistep_test_eff/"
     path = results_path + experiment
 
     test_loss = dict()
@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
         val_avg_loss = sum(loss_evolution)/len(loss_evolution)
         print("validation loss: " + str(val_avg_loss))
-        if val_avg_loss < 0.001:
+        if val_avg_loss < 0.05:
             plt.figure(figsize=(20, 8))
             plt.plot(loss_evolution, '-', color='indigo', label='Loss', linewidth=2)
             plt.legend()
@@ -77,7 +77,7 @@ if __name__ == '__main__':
             model_state, _ = torch.load(checkpoint, map_location='cpu')
             model.load_state_dict(model_state)
 
-            loss = transformer_test(model=model, df=df, device=device, config=config, save_dir=path_to_save, experiment_name=exp_id)
+            loss = transformer_test(model=model, df=df, df_scaler=scaler, device=device, config=config, save_dir=path_to_save, experiment_name=exp_id)
             test_loss[exp_id] = loss
             print("test loss: " + str(loss))
 
@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
     if test_loss is not None:
         # the json file where the output must be stored
-        out_file = open(path_to_save + experiment +"loss.json", "w")
+        out_file = open(path_to_save + experiment.strip("/") +"loss.json", "w")
 
         json.dump(test_loss, out_file, indent=4)
 
