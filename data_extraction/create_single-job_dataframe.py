@@ -10,7 +10,8 @@ from dask.delayed import delayed
 job_id = int(sys.argv[1])
 # Instantiate paths
 input_path = sys.argv[2]
-output_path = sys.argv[3]
+tmp_output_path = sys.argv[3]
+output_path = sys.argv[4]
 
 def load_data(files):
     readings_df = []
@@ -24,13 +25,13 @@ def load_data(files):
 
 # Load data
 files_type = 'task-usage_job-ID-%i*' % job_id
-files_list = glob.glob(os.path.join(input_path, files_type))
+files_list = glob.glob(os.path.join(tmp_output_path, files_type))
 readings_task_usage_df = load_data(files_list)
 # Import schema
-df_schema = pd.read_csv(os.path.join(data_paths['Google']['original_data'], 'schema.csv'))
+df_schema = pd.read_csv(os.path.join(input_path, 'schema.csv'))
 
 task_events_files = [
-    os.path.join(data_paths['Google']['original_data'], 'task_events/part-00' + str(v).zfill(3) + '-of-00500.csv.gz')
+    os.path.join(input_path, 'task_events/part-00' + str(v).zfill(3) + '-of-00500.csv.gz')
     for v in range(500)]
 cols_task_events = df_schema[df_schema['file pattern'] == 'task_events/part-?????-of-?????.csv.gz'].content.values
 
