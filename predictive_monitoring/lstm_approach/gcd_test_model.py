@@ -51,7 +51,7 @@ columns_to_consider = ['end time',
                        'Efficiency'  # target metric
                        ]
 
-readings_df = load_data('data/task-usage_job-ID-%i_total.csv' % job_id, columns_to_consider)
+readings_df = load_data('../data/task-usage_job-ID-%i_total.csv' % job_id, columns_to_consider)
 readings_df = data_aggregation(readings_df, aggr_type='mean')
 
 values = readings_df.values
