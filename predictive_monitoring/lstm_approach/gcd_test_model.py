@@ -75,7 +75,7 @@ test_X, test_y = values[:, :-1], values[:, -1]
 
 test_X = test_X.reshape((test_X.shape[0], 1, test_X.shape[1]))
 
-model = keras.models.load_model('results/lstm_batch72_neurons50_epochs400_do0')
+model = keras.models.load_model('../models/lstm_batch72_neurons50_epochs400_do0')
 
 print(model.summary())
 

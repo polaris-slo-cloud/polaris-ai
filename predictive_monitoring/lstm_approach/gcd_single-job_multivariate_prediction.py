@@ -5,9 +5,9 @@ from collections import defaultdict
 from math import sqrt
 import json
 
-from ..gcd_data_manipulation import data_aggregation
-from ..gcd_data_manipulation import extract_train_test
-from ..gcd_data_manipulation import load_data
+from gcd_data_manipulation import data_aggregation
+from gcd_data_manipulation import extract_train_test
+from gcd_data_manipulation import load_data
 from keras.layers import Dense
 from keras.layers import LSTM
 from keras.models import Sequential
@@ -130,13 +130,13 @@ if __name__ == "__main__":
                         help="Defines the number of repetition. Default = 1")
     parser.add_argument("--stateful", action="store_true",
                         help="If stateful, keeps the LSTM memory between batches")
-    parser.add_argument("--job_id", type=int, default=3418339, dest='job_id'
+    parser.add_argument("--job_id", type=int, default=3418339, dest='job_id',
                         help="ID of the job considered for the model generation.")
 
 
-    with open('columns_selectin.json') as f:
+    with open('columns_selection.json') as f:
         columns_selection = json.load(f)
-    
+
     args = parser.parse_args(sys.argv[1:])
     epochs, neurons, batch_size = args.hyperparameters
     exp_name = args.exp_name
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     stateful = args.stateful
     JOB_ID = args.job_id
 
-    input_path = "data/task-usage_job-ID-%i_total.csv" % JOB_ID
+    input_path = "../data/task-usage_job-ID-%i_total.csv" % JOB_ID
     figures_path = '../figures'
     results_path = '../results'
 
