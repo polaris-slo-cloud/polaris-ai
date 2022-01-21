@@ -1,7 +1,7 @@
 import os, sys
 import json
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from gcd_data_manipulation_cp import load_data, data_aggregation, scale_values, series_to_supervised
+from gcd_data_manipulation import load_data, data_aggregation, scale_values, series_to_supervised
 from pandas import Timestamp
 from data_loader import LoadGoogleDataset
 from torch.utils.data import DataLoader
@@ -158,17 +158,24 @@ def prepare_data(input_path):  # , columns_file, selected_cols):
     # values = readings_df.values
     # scaled, scaler = scale_values(values)
 
-    # Remove nans
-    # df.dropna(axis=0, inplace=True)  # remove rows with nans.
-    # df.fillna(0., inplace=True)  # change nans by zeros
-
-    # Scales data
-    min_max_scaler = MinMaxScaler()
-    # readings_df[readings_df.columns] = min_max_scaler.fit_transform(readings_df[readings_df.columns])
-    df_scaled = pd.DataFrame(min_max_scaler.fit_transform(readings_df), columns=readings_df.columns)
-    #
-    # df = data_aggregation(df, aggr_type="mean")  # Data aggregated by TS using the mean value
-    return df_scaled, min_max_scaler
+    #Remove nans
+    readings_df.dropna(axis=0, inplace=True)  # remove rows with nans.
+    #df.fillna(0., inplace=True)  # change nans by zeros
+    
+    if len(readings_df) > 50:
+        # Scales data
+        min_max_scaler = MinMaxScaler()
+        # readings_df[readings_df.columns] = min_max_scaler.fit_transform(readings_df[readings_df.columns])
+        try: 
+            df_scaled = pd.DataFrame(min_max_scaler.fit_transform(readings_df), columns=readings_df.columns)
+        except (ValueError):
+            print("ValueError")
+            return None, None
+        #
+        # df = data_aggregation(df, aggr_type="mean")  # Data aggregated by TS using the mean value
+        return df_scaled, min_max_scaler
+    else:
+        return None, None
 
 
 def transformer_train(config, df, device):

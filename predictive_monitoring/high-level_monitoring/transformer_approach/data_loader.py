@@ -20,6 +20,7 @@ class LoadGoogleDataset(Dataset):
         self.p_steps = int(prediction_step)
 
         times = sorted(data_frame.index.values)
+        last_05pct = sorted(data_frame.index.values)[-int(0.05 * len(times))]  # Last 5% of series
         last_20pct = sorted(data_frame.index.values)[-int(0.2 * len(times))]  # Last 20% of series
         last_40pct = sorted(data_frame.index.values)[-int(0.4 * len(times))]  # Last 40% of series
 
@@ -29,6 +30,8 @@ class LoadGoogleDataset(Dataset):
             self.data_set = data_frame[(data_frame.index >= last_40pct) & (data_frame.index < last_20pct)]
         elif mode == "test":
             self.data_set = data_frame[(data_frame.index >= last_20pct)]
+        elif mode == "all":
+            self.data_set = data_frame
 
         if self.seq_len > len(self.data_set) - self.p_steps:
             self.seq_len = len(self.data_set) - self.p_steps - 1
@@ -37,7 +40,7 @@ class LoadGoogleDataset(Dataset):
         return len(self.data_set) - (self.seq_len + self.p_steps) + 1
 
     def __getitem__(self, idx):
-        if self.mode == 'test':
+        if self.mode == 'test' or self.mode == 'all':
             start = idx
             end = idx + self.seq_len
             input_idx = range(start, end)

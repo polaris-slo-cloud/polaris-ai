@@ -89,7 +89,7 @@ if __name__ == '__main__':
     print(torch.__version__)
 
     # Training, validation and test of the best model for the ASHA scheduler.
-    exp_name = "multistep_test_eff"
+    exp_name = "multistep"
     # if len(sys.argv) != 2:
     #     print("Provide experiment name")
     #     exit(1)

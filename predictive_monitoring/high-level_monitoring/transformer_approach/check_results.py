@@ -10,13 +10,7 @@ import torch
 if __name__ == '__main__':
 
     data_path = "/home/vcpujol/src/polaris-ai/predictive_monitoring/high-level_monitoring/data/task-usage_job-ID-3418339_total.csv"
-    # columns_file = "../../columns_selection.json"
-    # columns_scheme = "LSTM_efficiency_1"
-    cuda_id = 1
 
-
-    # extra_ds = "task-usage_job-ID-5546501684_total.csv"
-    # data_path = "/data/cloud_data/Google-clusterdata-2011-2/processed_data/high-level_monitoring/" + extra_ds
     path_to_save = "/data/results/vcpujol/transformers/single_deployment/google_traces/multistep_best_eff_computed/"
 
     df, scaler = prepare_data(data_path)  #, columns_file, columns_scheme)
@@ -35,8 +29,6 @@ if __name__ == '__main__':
     for _, dirnames, _ in walk(path):
         folders_list.extend(dirnames)
         break
-    # folders_list.append("DEFAULT_ffb5e_00042_42_batch_size=2,decoder_layers=2,dim_att=9,dim_val=6,encoder_layers=6,epochs=40,gamma=0.98802,input_feat_dec=1_2021-04-24_22-59-46")
-    # folders_list.append("DEFAULT_ffb5e_00221_221_batch_size=9,decoder_layers=3,dim_att=9,dim_val=4,encoder_layers=2,epochs=40,gamma=0.93813,input_feat_dec=_2021-04-25_07-25-27")
 
     ii = 0
     for folder in folders_list:
