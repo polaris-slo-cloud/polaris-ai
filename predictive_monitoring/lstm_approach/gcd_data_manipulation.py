@@ -4,6 +4,10 @@ from pandas import read_csv
 
 from sklearn.preprocessing import MinMaxScaler
 
+import tensorflow as tf
+
+from numpy import array
+
 
 def load_data(input_path, selected_columns):
     # Load data
@@ -92,3 +96,35 @@ def extract_train_test(values, n_train=(14 * 24 * 12)):
     test_X, test_y = extract_data_target(test)
 
     return train_X, train_y, test_X, test_y, scaler
+
+########################
+#####    Multistep #####
+########################
+
+def reshape_data(
+    input_data,
+    n_input_steps,
+    n_out_steps,
+    input_cols_interval=None,
+    target_col_index=-1,
+):
+    X, y = list(), list()
+    in_start = 0
+    if input_cols_interval == None:
+        lower_index = 0
+        higher_index = input_data.shape[1]
+    else:
+        lower_index = input_cols_interval[0]
+        higher_index = input_cols_interval[1]
+    for _ in range(len(input_data)):
+        in_end = in_start + n_input_steps
+        out_end = in_end + n_out_steps
+        if out_end <= len(input_data):
+            x_input = input_data[in_start:in_end, lower_index:higher_index]
+            x_input = x_input.reshape((x_input.shape[0], x_input.shape[1]))
+            X.append(x_input)
+            y.append(input_data[in_end:out_end, target_col_index])
+        in_start += 1
+
+    #return tf.convert_to_tensor(array(X)), tf.convert_to_tensor(array(y))
+    return array(X), array(y)
