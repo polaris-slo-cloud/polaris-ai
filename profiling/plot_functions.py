@@ -6,6 +6,8 @@ from cycler import cycler
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
+import seaborn as sns
+
 def extract_jobs_comparison_plot(selected_df, others_df, feature):
     sel_vals = sorted(selected_df[feature].values.reshape((selected_df[feature].values.shape[0] * selected_df[feature].values.shape[1],)))
     pdf_sel = norm.pdf(sel_vals, 0, 1)
@@ -34,7 +36,7 @@ def extract_jobs_comparison_plot(selected_df, others_df, feature):
     
 ## Cluster plots
 
-def plot_silhouette_results(cluster_labels, silhouette_avg, sample_silhouette_values, n_clusters):
+def plot_silhouette_results(cluster_labels, silhouette_avg, sample_silhouette_values, n_clusters, multiplier=10000):
     plt.figure(figsize=(12, 12))
 
     # The 1st subplot is the silhouette plot
@@ -66,7 +68,7 @@ def plot_silhouette_results(cluster_labels, silhouette_avg, sample_silhouette_va
         plt.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i))
 
         # Compute the new y_lower for next plot
-        y_lower = y_upper + 10000  # 10 for the 0 samples
+        y_lower = y_upper + multiplier  # 10 for the 0 samples
 
     plt.title("The silhouette plot for the various clusters.")
     plt.xlabel("The silhouette coefficient values")
@@ -98,3 +100,76 @@ def plot_feature_scatter(ax, data, clusterer, cluster_labels, feature, dim1, dim
     ax.set_title("The visualization of the {feature} {notation}. K = {n_clusters}".format(feature=feature, notation=notation, n_clusters=n_clusters))
     ax.set_xlabel("Feature space for the {feature} - mean".format(feature=feature))
     ax.set_ylabel("Feature space for the {feature} - std".format(feature=feature))
+    
+    
+#### Metadata plots
+def plot_metadata_heatmap(data, target_metric, k, figname, colormap, categories):
+
+    heatmap_df = data.groupby([target_metric, f"K-Means = {k}"])[target_metric].count()
+    heatmap_df = heatmap_df.to_frame()
+    heatmap_df.columns = ["quartiles count"]
+
+    heatmap_df_total = heatmap_df.reset_index()
+    heatmap_df_total = heatmap_df_total.pivot(target_metric, f"K-Means = {k}", "quartiles count")
+    #heatmap_df_total["total"] = heatmap_df.groupby("priority labels").sum().values
+
+    #plt.figure(figsize=(20,7))
+    #sns.heatmap(heatmap_df_total, annot=True, fmt="d")
+    #
+    heatmap_df_perc = heatmap_df.groupby(level=[1]).apply(lambda g: g / g.sum())
+    heatmap_df_perc = heatmap_df_perc.reset_index()
+    heatmap_df_perc[target_metric] = pd.Categorical(heatmap_df_perc[target_metric], categories=categories)
+
+    heatmap_df_perc = heatmap_df_perc.pivot(target_metric, f"K-Means = {k}", "quartiles count")
+
+
+    plt.figure(figsize=(20,7))
+    sns.heatmap(heatmap_df_perc, annot=True, annot_kws={'va': 'bottom', 'fontweight': 'bold', 'fontsize': 'large'}, cmap="pink", cbar_kws={'label': 'Proportion'+'\n'+'size'})
+    sns.heatmap(heatmap_df_perc, annot=heatmap_df_total, annot_kws={'va': 'top', 'size': 14, 'fontstyle': 'italic'}, fmt="d", cmap="pink", cbar=False)
+    plt.tight_layout()
+    plt.savefig(figname)
+    
+def plot_metadata_boxplot(data, target_metric):
+    heatmap_df = data.groupby(["priority labels", "K-Means = 10"])["priority labels"].count()
+    heatmap_df = heatmap_df.to_frame()
+    heatmap_df.columns = ["priority count"]
+
+
+    heatmap_df_total = heatmap_df.reset_index()
+    heatmap_df_total = heatmap_df_total.pivot("priority labels", "K-Means = 10", "priority count")
+    #heatmap_df_total["total"] = heatmap_df.groupby("priority labels").sum().values
+
+    #plt.figure(figsize=(20,7))
+    #sns.heatmap(heatmap_df_total, annot=True, fmt="d")
+    #
+    heatmap_df_perc = heatmap_df.groupby(level=[1]).apply(lambda g: g / g.sum())
+    heatmap_df_perc = heatmap_df_perc.reset_index()
+    heatmap_df_perc.columns = ["priority label", "K-Means", "proportion"]
+    heatmap_df_perc["K-Means"] = "K = 10"
+    heatmap_df_final = heatmap_df_perc.copy()
+
+    for k in range(2, 10, 2):
+        heatmap_df = data.groupby(["priority labels", f"K-Means = {k}"])["priority labels"].count()
+        heatmap_df = heatmap_df.to_frame()
+        heatmap_df.columns = ["priority count"]
+
+
+        heatmap_df_total = heatmap_df.reset_index()
+        heatmap_df_total = heatmap_df_total.pivot("priority labels", f"K-Means = {k}", "priority count")
+        #heatmap_df_total["total"] = heatmap_df.groupby("priority labels").sum().values
+
+        #plt.figure(figsize=(20,7))
+        #sns.heatmap(heatmap_df_total, annot=True, fmt="d")
+        #
+        heatmap_df_perc = heatmap_df.groupby(level=[1]).apply(lambda g: g / g.sum())
+        heatmap_df_perc = heatmap_df_perc.reset_index()
+        heatmap_df_perc.columns = ["priority label", "K-Means", "proportion"]
+        heatmap_df_perc["K-Means"] = f"K = {k}"
+        heatmap_df_final = heatmap_df_final.append(heatmap_df_perc)
+
+    heatmap_df_final
+    heatmap_df_final["K-Means"] = pd.Categorical(heatmap_df_final['K-Means'], categories=[f"K = {k}" for k in range(2, 12, 2)])
+
+    plt.figure(figsize=(20,10))
+    sns.boxplot(x="priority label", y="proportion", hue="K-Means", data=heatmap_df_final, palette="Set3")
+    plt.savefig('figures/2021-11-28-presentation/priority_labels_boxplot-sum.svg')
