@@ -1,5 +1,6 @@
 from math import sqrt
 import numpy as np
+import tensorflow as tf
 
 from sklearn.metrics import mean_squared_error
 
@@ -45,7 +46,7 @@ def evaluate_forecast(actual, predicted, type='rmse'):
     return score, scores
 
 
-def walk_forward_validation(model, test_x, test_y, test_set, scaler_transf, n_out):
+def walk_forward_validation(model, test_x, test_y, test_set, scaler_transf, n_out, gpu_id=0):
     predictions = list()
     real_values = list()
     start_val = 0
@@ -53,7 +54,10 @@ def walk_forward_validation(model, test_x, test_y, test_set, scaler_transf, n_ou
         test_input_x = test_input_x.reshape(
             (1, test_input_x.shape[0], test_input_x.shape[1])
         )
+        
         yhat = model.predict(test_input_x, verbose=0)
+
+            
         yhat_reshaped = np.array(yhat[0]).reshape((n_out, 1))
         end_val = start_val + n_out
         test_window = test_set[start_val:end_val, :-1]
@@ -71,5 +75,6 @@ def walk_forward_validation(model, test_x, test_y, test_set, scaler_transf, n_ou
         start_val += 1
     predictions = np.array(predictions)
     real_values = np.array(real_values)
-    score, scores = evaluate_forecast(real_values, predictions)
-    return score, scores, predictions, real_values
+    
+
+    return predictions, real_values

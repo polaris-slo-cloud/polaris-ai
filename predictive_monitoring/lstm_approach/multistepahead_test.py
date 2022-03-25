@@ -38,6 +38,14 @@ from multistepahead_model_evaluation import walk_forward_validation
 
 import os
 
+import time
+import logging
+
+log_name = '/home/amorichetta/polaris-ai/predictive_monitoring/lstm_approach/logging/multistepahead-test.log'
+logging.basicConfig(filename=log_name, encoding='utf-8', level = logging.DEBUG)
+
+script_start = time.time()
+
 job_path = sys.argv[1]
 model_path = sys.argv[2]
 output_path = sys.argv[3]
@@ -45,6 +53,7 @@ mongodb_name = sys.argv[4] #default predictiveDB
 mongodb_collection = sys.argv[5] #default multistepahead
 n_input = int(sys.argv[6])
 n_out = int(sys.argv[7])
+gpu_id = sys.argv[8]
 
 jobname = os.path.basename(job_path).split('.')[0]
 exp_name = "LSTM-multivariate-test" #.format(jobname=jobname)
@@ -72,74 +81,134 @@ columns_to_consider = [
     "Efficiency",  # target metric
 ]
 
-df = pd.read_csv(job_path, header=[0,1], index_col=[0])
-df_tmp = df[columns_to_consider[:-1]]
-df_tmp["Efficiency"] = df["Efficiency"]['mean']
-df = df_tmp
-test = df.values
+
+def config_gpu(device):
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
+    if device is not None:
+        os.environ["CUDA_VISIBLE_DEVICES"] = device
 
 
-test_scaled, scaler = scale_values(test)
-# reshape data
-test_x_conf_1_no_acc, test_y_conf_1_no_acc = reshape_data(
-    test_scaled, n_input, n_out, input_cols_interval=(0, -1)
-)
+def interpolate_df(df):
+    df.reset_index(inplace=True)
+    df["datetime"] = timestamps_readings = [
+        pd.Timestamp(int(t / 1000000) + 1304233200, tz="US/Pacific", unit="s")
+        for t in df["end time"].values
+    ]
+    df.set_index("datetime", inplace=True)
+    df.interpolate(method="time", limit_direction="both", inplace=True)
 
-model = load_model(model_path)
-print(model.summary())
-print(test_x_conf_1_no_acc.shape, test_y_conf_1_no_acc.shape)
-
-print("Starting walk forward validation...")
-score_rmse, scores_rmse, pred_1, real_v_1 = walk_forward_validation(
-    model, test_x_conf_1_no_acc, test_y_conf_1_no_acc, 
-    test,
-    scaler,
-    n_out
-)
-print("Walk forward validation done!")
-      
-res = [{'job_ID': jobname,
-       'score_tot': score_rmse,
-       'score_1': scores_rmse[0],
-       'score_2': scores_rmse[1],
-       'score_3': scores_rmse[2],
-       'error_type': 'rmse',
-      'model_name': model_path,
-      'experiment_name': exp_name}]
-
-
-print("Computing metrics...")
-metrics = ['rmse_p', 'true_val', 'true_val_max', 'true_val_min', 'true_val_ratio_pos']
-for metric in metrics:
-    score, scores = evaluate_forecast(real_v_1, pred_1,  metric)
-    res.append({'job_ID': jobname,
-       'score_tot': score,
-       'score_1': scores[0],
-       'score_2': scores[1],
-       'score_3': scores[2],
-       'error_type': metric,
-       'model_name': model_path,
-       'experiment_name': exp_name})
+    df.reset_index(inplace=True)
+    df.drop(['datetime'], axis=1, inplace=True)
+    df.set_index("end time", inplace=True)
+    
+    return df
 
     
-collection.insert_many(res)
-print("Metrics inserted in mongodb")
+def plot_results(real_values, predictions, output_path, jobname, last_n=700):
+    for i in range(3):
+        step_y = [x[0] for x in real_values]
+        step_yhat = [x[0] for x in predictions]
 
-for i in range(3):
-    step_y = [x[0] for x in real_v_1]
-    step_yhat = [x[0] for x in pred_1]
+        pyplot.clf()
+        pyplot.figure(figsize=(15, 9))
 
-    pyplot.clf()
-    pyplot.figure(figsize=(15, 9))
+        pyplot.plot(step_y[-last_n:], "-", color="orange", label="Raw measurements")
+        pyplot.plot(step_yhat[-last_n:], "--", color="blue", label="Predictions")
+        pyplot.xlabel("Steps", fontsize=20)
+        pyplot.ylabel("Efficiency", fontsize=20)
+        pyplot.xticks(fontsize=24)
+        pyplot.yticks(fontsize=24)
+        pyplot.legend(fontsize=14, frameon=False)
+        pyplot.tight_layout()
+        pyplot.savefig(os.path.join(output_path,"{jobname}-step-{step}- 700.png".format(jobname=jobname, step=i+1)))
+    
+    return
 
-    pyplot.plot(step_y[-700:], "-", color="orange", label="Raw measurements")
-    pyplot.plot(step_yhat[-700:], "--", color="blue", label="Predictions")
-    pyplot.xlabel("Steps", fontsize=20)
-    pyplot.ylabel("Efficiency", fontsize=20)
-    pyplot.xticks(fontsize=24)
-    pyplot.yticks(fontsize=24)
-    pyplot.legend(fontsize=14, frameon=False)
-    pyplot.tight_layout()
-    pyplot.savefig(os.path.join(output_path,"{jobname}-step-{step}-700.png".format(jobname=jobname, step=i+1)))
 
-print("Plotted results")
+if __name__ == '__main__':
+    config_gpu(gpu_id)
+    
+    try:
+        df = pd.read_csv(job_path, header=[0,1], index_col=[0])
+    except FileNotFoundError as e:
+        logging.exception(e.errno)
+
+    df_tmp = df[columns_to_consider[:-1]]
+    df_tmp["Efficiency"] = df["Efficiency"]['mean'].values
+    #df = df_tmp
+
+    df = interpolate_df(df_tmp)
+
+    count_nans = df.isna().sum().sum()
+    if count_nans > 0:
+        logging.info(f"{job_path} has {count_nans} NaNs")
+
+    test = df.values
+
+    test_scaled, scaler = scale_values(test)
+
+    print(np.count_nonzero(np.isnan(test_scaled)))
+    print(np.count_nonzero(np.isnan(test)))
+
+    # reshape data
+    test_x_conf_1_no_acc, test_y_conf_1_no_acc = reshape_data(
+        test_scaled, n_input, n_out, input_cols_interval=(0, -1)
+    )
+
+    model = load_model(model_path)
+    print(model.summary())
+    print(test_x_conf_1_no_acc.shape, test_y_conf_1_no_acc.shape)
+
+    start = time.time()
+    print("Starting walk forward validation...")
+    predictions, real_values = walk_forward_validation(
+        model, test_x_conf_1_no_acc, test_y_conf_1_no_acc, 
+        test,
+        scaler,
+        n_out,
+        gpu_id
+    )
+    end = time.time()
+
+    print("Walk forward validation done!")
+    print("Elapsed time: ", end - start)
+    logging.info(f"{job_path} has {end - start} test time")
+
+    #if np.count_nonzero(np.isnan(pred_1)) > 0:
+    print(f"Predictions with {np.count_nonzero(np.isnan(predictions))} NaNs")
+    #if np.count_nonzero(np.isnan(real_v_1)) > 0:
+    print(f"Real Values with {np.count_nonzero(np.isnan(real_values))} NaNs")
+
+
+    res = []
+    start = time.time()
+    print("Computing metrics...")
+    metrics = ['rmse', 'rmse_p', 'true_val', 'true_val_max', 'true_val_min', 'true_val_ratio_pos']
+    for metric in metrics:
+        score, scores = evaluate_forecast(real_values, predictions,  metric)
+        res.append({'job_ID': jobname,
+           'score_tot': score,
+           'score_1': scores[0],
+           'score_2': scores[1],
+           'score_3': scores[2],
+           'error_type': metric,
+           'model_name': model_path,
+           'experiment_name': exp_name})
+
+
+    collection.insert_many(res)
+    end = time.time()
+
+    print("Metrics inserted in mongodb")
+    print("Elapsed time: ", end - start)
+    logging.info(f"{job_path} has {end - start} evaluation time")
+
+
+    plot_results(real_values, predictions, output_path, jobname, last_n=100)
+    plot_results(real_values, predictions, output_path, jobname, last_n=700)
+    print("Plotted results")
+
+    script_end = time.time()
+
+    print("Script execution time: ", script_end - script_start)
+    logging.info(f"{job_path} has {script_end - script_start} Script execution time")
