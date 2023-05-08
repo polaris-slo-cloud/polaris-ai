@@ -3,7 +3,7 @@
 ## Rationale
 Our team has created a reference implementation of PolarisProfiler, which includes the main profiling processes. The primary purpose of this tool is to optimize the scheduling of Machine Learning (ML) workloads, using the [Alibaba Cluster Trace](https://github.com/alibaba/clusterdata). To achieve this, we have developed a profiling approach that focuses on assessing the duration of the workload. This duration is a crucial feature in planning and scheduling workloads, as it ensures efficient use of resources while also meeting SLOs.
 
-![Profiling model overview](Figures/Profiling model.pdf)
+![Profiling model overview](Figures/Profiling-model.pdf)
 
 ## Understanding the code
 The experiment were mainly conducted in two phases. 
